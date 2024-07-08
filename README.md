@@ -16,4 +16,8 @@ https://github.com/mpvkit/libluajit-build.git
 
 ```bash
 swift run --package-path scripts
+
+or 
+
+swift run --package-path scripts build platforms=ios,macos  #deployment platform: macos,ios,tvos,maccatalyst
 ```

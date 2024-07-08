@@ -16,7 +16,6 @@ enum Library: String, CaseIterable {
         switch self {
         case .libluajit:
             return "v2.1"
-
         }
     }
 

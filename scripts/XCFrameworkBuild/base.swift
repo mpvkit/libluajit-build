@@ -20,17 +20,31 @@ enum Build {
             try? FileManager.default.createDirectory(at: path, withIntermediateDirectories: false, attributes: nil)
         }
         FileManager.default.changeCurrentDirectoryPath(path.path)
-        BaseBuild.isDebug = arguments.firstIndex(of: "enable-debug") != nil
-        BaseBuild.platforms = arguments.compactMap { argument in
-            if argument.hasPrefix("platform=") {
-                let value = String(argument.suffix(argument.count - "platform=".count))
-                return PlatformType(rawValue: value)
-            } else {
-                return nil
+        for argument in arguments {
+            if argument == "enable-debug" {
+                BaseBuild.isDebug = true
+            } else if argument.hasPrefix("platforms=") {
+                let values = String(argument.suffix(argument.count - "platforms=".count))
+                var platforms : [PlatformType] = []
+                for val in values.split(separator: ",") {
+                    let platformStr = val.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    switch platformStr {
+                    case "ios":
+                        platforms += [PlatformType.ios, PlatformType.isimulator]
+                    case "tvos":
+                        platforms += [PlatformType.tvos, PlatformType.tvsimulator]
+                    default:
+                        if let other = PlatformType(rawValue: platformStr), !platforms.contains(other) {
+                            platforms += [other]
+                        } else {
+                            throw NSError(domain: "unknown platform: \(val)", code: 1)
+                        }
+                    }
+                }
+                if !platforms.isEmpty {
+                    BaseBuild.platforms = platforms
+                }
             }
-        }
-        if BaseBuild.platforms.isEmpty {
-            BaseBuild.platforms = PlatformType.allCases
         }
     }
 }
@@ -461,13 +475,15 @@ class BaseBuild {
         }
 
         // copy includes
-        let includePath = thinDir(platform: PlatformType.ios, arch: ArchType.arm64) + ["include"]
+        let firstPlatform = BaseBuild.platforms.first!
+        let firstArch = architectures(firstPlatform).first!
+        let includePath = thinDir(platform: firstPlatform, arch: firstArch) + ["include"]
         let destIncludePath = releaseDirPath + [library.rawValue, "include"]
         try FileManager.default.copyItem(at: includePath, to: destIncludePath)
 
 
         // copy pkg-config files
-        let iosLibPath = thinDir(platform: PlatformType.ios, arch: ArchType.arm64) + ["lib"]
+        let iosLibPath = thinDir(platform: firstPlatform, arch: firstArch) + ["lib"]
         let pkgconfigPath = iosLibPath + ["pkgconfig"]
         let destPkgConfigPath = releaseDirPath + [library.rawValue, "pkgconfig-example"]
         try FileManager.default.copyItem(at: pkgconfigPath, to: destPkgConfigPath)
