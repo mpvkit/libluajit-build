@@ -8,10 +8,16 @@ let package = Package(
         .library(
             name: "libluajit",
             type: .static,
-            targets: ["Libluajit"]
+            targets: ["luajit"]
         ),
     ],
     targets: [
+        .target(
+            name: "luajit",
+            dependencies: [
+                "Libluajit"
+            ]
+        ),
         .binaryTarget(
             name: "Libluajit",
             url: "\(Libluajit_url)",
