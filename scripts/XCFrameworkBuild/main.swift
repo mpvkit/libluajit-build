@@ -93,7 +93,7 @@ private class BuildLuaJIT: BaseBuild {
         try super.buildALL()
 
         // copy headers
-        let firstPlatform = BaseBuild.platforms.first!
+        let firstPlatform = getFirstSuccessPlatform()
         let firstArch = architectures(firstPlatform).first!
         let includeSourceDirectory = thinDir(platform: firstPlatform, arch: firstArch) + ["include", "luajit-2.1"]
         let includeDestDirectory = URL.currentDirectory + "../Sources/luajit/include"

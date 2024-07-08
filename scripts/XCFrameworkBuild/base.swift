@@ -475,7 +475,7 @@ class BaseBuild {
         }
 
         // copy includes
-        let firstPlatform = BaseBuild.platforms.first!
+        let firstPlatform = getFirstSuccessPlatform()
         let firstArch = architectures(firstPlatform).first!
         let includePath = thinDir(platform: firstPlatform, arch: firstArch) + ["include"]
         let destIncludePath = releaseDirPath + [library.rawValue, "include"]
@@ -520,6 +520,18 @@ class BaseBuild {
             try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
             Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
         }
+    }
+
+    func getFirstSuccessPlatform() -> PlatformType {
+        for platform in BaseBuild.platforms {
+            let firstArch = architectures(platform).first!
+            let thinPath = thinDir(platform: platform, arch: firstArch)
+            if FileManager.default.fileExists(atPath: thinPath.path) {
+                return platform
+            }
+        }
+
+        return BaseBuild.platforms.first!
     }
 }
 
