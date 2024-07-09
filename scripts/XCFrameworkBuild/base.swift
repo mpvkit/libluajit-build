@@ -23,6 +23,8 @@ enum Build {
         for argument in arguments {
             if argument == "enable-debug" {
                 BaseBuild.isDebug = true
+            } else if argument == "enable-split-platform" {
+                BaseBuild.splitPlatform = true
             } else if argument.hasPrefix("platforms=") {
                 let values = String(argument.suffix(argument.count - "platforms=".count))
                 var platforms : [PlatformType] = []
@@ -53,6 +55,7 @@ class BaseBuild {
     static let defaultPath = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     static var platforms = PlatformType.allCases
     static var isDebug: Bool = false
+    static var splitPlatform: Bool = false
     let library: Library
     let directoryURL: URL
     init(library: Library) {
@@ -266,6 +269,8 @@ class BaseBuild {
     }
 
     func createXCFramework() throws {
+        try Utility.removeFiles(extensions: [".xcframework"], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
+
         var frameworks: [String] = []
         let libNames = try self.frameworks()
         for libName in libNames {
@@ -276,21 +281,54 @@ class BaseBuild {
             }
         }
         for framework in frameworks {
-            var arguments = ["-create-xcframework"]
+            var frameworkGenerated = [PlatformType: String]()
             for platform in BaseBuild.platforms {
                 if let frameworkPath = try createFramework(framework: framework, platform: platform) {
-                    arguments.append("-framework")
-                    arguments.append(frameworkPath)
+                    frameworkGenerated[platform] = frameworkPath
                 }
             }
-            arguments.append("-output")
-            let XCFrameworkFile = URL.currentDirectory + ["../Sources", framework + ".xcframework"]
-            arguments.append(XCFrameworkFile.path)
-            if FileManager.default.fileExists(atPath: XCFrameworkFile.path) {
-                try? FileManager.default.removeItem(at: XCFrameworkFile)
+            try buildXCFramework(name: framework, paths: Array(frameworkGenerated.values))
+
+            // Generate xcframework for different platforms
+            if BaseBuild.splitPlatform {
+                if let iosFrameworkPath = frameworkGenerated[.ios] {
+                    var frameworkPaths: [String] = [iosFrameworkPath]
+                    frameworkGenerated.removeValue(forKey: .ios)
+                    if let isimulatorFrameworkPath = frameworkGenerated[.isimulator] {
+                        frameworkPaths.append(isimulatorFrameworkPath)
+                        frameworkGenerated.removeValue(forKey: .isimulator)
+                    }
+                    try buildXCFramework(name: "\(framework)-ios", paths: frameworkPaths)
+                }
+                if let tvosFrameworkPath = frameworkGenerated[.tvos] {
+                    var frameworkPaths: [String] = [tvosFrameworkPath]
+                    frameworkGenerated.removeValue(forKey: .tvos)
+                    if let tvsimulatorFrameworkPath = frameworkGenerated[.tvsimulator] {
+                        frameworkPaths.append(tvsimulatorFrameworkPath)
+                        frameworkGenerated.removeValue(forKey: .tvsimulator)
+                    }
+                    try buildXCFramework(name: "\(framework)-tvos", paths: frameworkPaths)
+                }
+                for (platform, frameworkPath) in frameworkGenerated {
+                    try buildXCFramework(name: "\(framework)-\(platform.rawValue)", paths: [frameworkPath])
+                }
             }
-            try Utility.launch(path: "/usr/bin/xcodebuild", arguments: arguments)
         }
+    }
+
+    private func buildXCFramework(name: String, paths: [String]) throws {
+        var arguments = ["-create-xcframework"]
+        for frameworkPath in paths {
+            arguments.append("-framework")
+            arguments.append(frameworkPath)
+        }
+        arguments.append("-output")
+        let XCFrameworkFile = URL.currentDirectory + ["../Sources", name + ".xcframework"]
+        arguments.append(XCFrameworkFile.path)
+        if FileManager.default.fileExists(atPath: XCFrameworkFile.path) {
+            try? FileManager.default.removeItem(at: XCFrameworkFile)
+        }
+        try Utility.launch(path: "/usr/bin/xcodebuild", arguments: arguments)
     }
 
     func createFramework(framework: String, platform: PlatformType) throws -> String? {
@@ -495,11 +533,13 @@ class BaseBuild {
             }
         }
 
-        // zip build artifacts
-        let sourceLib = releaseDirPath + [library.rawValue]
-        let destZipLibPath = releaseDirPath + [library.rawValue + "-all.zip"]
-        try? FileManager.default.removeItem(at: destZipLibPath)
-        try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", destZipLibPath.path, "./"], currentDirectoryURL: sourceLib)
+        // zip build artifacts when there are frameworks to generate
+        if try self.frameworks().count > 0 {
+            let sourceLib = releaseDirPath + [library.rawValue]
+            let destZipLibPath = releaseDirPath + [library.rawValue + "-all.zip"]
+            try? FileManager.default.removeItem(at: destZipLibPath)
+            try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", destZipLibPath.path, "./"], currentDirectoryURL: sourceLib)
+        }
 
         // zip xcframeworks
         var frameworks: [String] = []
@@ -511,14 +551,27 @@ class BaseBuild {
                 frameworks.append(libName)
             }
         }
+        try Utility.removeFiles(extensions: [".zip", ".checksum.txt"], currentDirectoryURL: releaseDirPath)
         for framework in frameworks {
             let XCFrameworkFile =  framework + ".xcframework"
             let zipFile = releaseDirPath + [framework + ".xcframework.zip"]
             let checksumFile = releaseDirPath + [framework + ".xcframework.checksum.txt"]
-            try? FileManager.default.removeItem(at: zipFile)
-            try? FileManager.default.removeItem(at: checksumFile)
             try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
             Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
+
+            if BaseBuild.splitPlatform {
+                for platform in BaseBuild.platforms {
+                    let XCFrameworkName =  "\(framework)-\(platform.rawValue)"
+                    let XCFrameworkFile =  XCFrameworkName + ".xcframework"
+                    let XCFrameworkPath = URL.currentDirectory + ["../Sources", "\(framework)-\(platform.rawValue).xcframework"]
+                    if FileManager.default.fileExists(atPath: XCFrameworkPath.path) {
+                        let zipFile = releaseDirPath + [XCFrameworkName + ".xcframework.zip"]
+                        let checksumFile = releaseDirPath + [XCFrameworkName + ".xcframework.checksum.txt"]
+                        try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
+                        Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
+                    }
+                }
+            }
         }
     }
 
@@ -931,7 +984,6 @@ enum Utility {
         #endif
     }
 
-
     @discardableResult
     static func listAllFiles(in directory: URL) -> [URL] {
         var allFiles: [URL] = []
@@ -952,6 +1004,17 @@ enum Utility {
         }
 
         return allFiles
+    }
+
+    static func removeFiles(extensions: [String], currentDirectoryURL: URL) throws {
+        for ext in extensions {
+            let directoryContents = try FileManager.default.contentsOfDirectory(atPath: currentDirectoryURL.path)
+            for item in directoryContents {
+                if item.hasSuffix(ext) {
+                    try FileManager.default.removeItem(at: currentDirectoryURL.appendingPathComponent(item))
+                }
+            }
+        }
     }
 }
 
