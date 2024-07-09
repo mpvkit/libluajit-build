@@ -607,18 +607,18 @@ class ZipBaseBuild : BaseBuild {
 
                 // restore include
                 let srcIncludePath = directoryURL + ["include"]
-                let destIncludePath = thinDir(platform: platform, arch: arch) + ["include"]
+                let destIncludePath = destThinPath + ["include"]
                 try? FileManager.default.copyItem(at: srcIncludePath, to: destIncludePath)
 
                 // restore pkgconfig
                 let srcPkgConfigPath = directoryURL + ["pkgconfig-example"]
-                let destPkgConfigPath = thinDir(platform: platform, arch: arch) + ["lib", "pkgconfig"]
+                let destPkgConfigPath = destThinPath + ["lib", "pkgconfig"]
                 try? FileManager.default.copyItem(at: srcPkgConfigPath, to: destPkgConfigPath)
 
                 // update pkgconfig prefix
                 Utility.listAllFiles(in: destPkgConfigPath).forEach { file in
                     if let data = FileManager.default.contents(atPath: file.path), var str = String(data: data, encoding: .utf8) {
-                        str = str.replacingOccurrences(of: "/path/to/dist" , with: URL.currentDirectory.path)
+                        str = str.replacingOccurrences(of: "/path/to/platform/thin" , with: destThinPath.path)
                         try! str.write(toFile: file.path, atomically: true, encoding: .utf8)
                     }
                 }
