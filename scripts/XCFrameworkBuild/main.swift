@@ -88,17 +88,4 @@ private class BuildLuaJIT: BaseBuild {
     override func frameworks() throws -> [String] {
         ["libluajit"]
     }
-
-    override func buildALL() throws {
-        try super.buildALL()
-
-        // copy headers
-        let firstPlatform = getFirstSuccessPlatform()
-        let firstArch = architectures(firstPlatform).first!
-        let includeSourceDirectory = thinDir(platform: firstPlatform, arch: firstArch) + ["include", "luajit-2.1"]
-        let includeDestDirectory = URL.currentDirectory + "../Sources/luajit/include"
-        print("Copy ass headers to path: \(includeDestDirectory.path)")
-        try? FileManager.default.removeItem(at: includeDestDirectory)
-        try? FileManager.default.copyItem(at: includeSourceDirectory, to: includeDestDirectory)
-    }
 }
