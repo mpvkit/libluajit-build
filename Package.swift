@@ -12,7 +12,7 @@ let package = Package(
         .binaryTarget(
             name: "Libluajit",
             url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0/Libluajit.xcframework.zip",
-            checksum: "536dcdc5eedd3025a21b3f55ec8404a33349b8c126a803ee75ec67587f544be0"
+            checksum: "cd4ad9956285eb97c5fea42e2e9feac74b98cfcd2102dad8b5a43da0a86a4692"
         )
     ]
 )
