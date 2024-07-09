@@ -487,12 +487,15 @@ class BaseBuild {
     }
 
     private func packageRelease() throws {
+
         let releaseDirPath = URL.currentDirectory + ["release"]
         if !FileManager.default.fileExists(atPath: releaseDirPath.path) {
             try? FileManager.default.createDirectory(at: releaseDirPath, withIntermediateDirectories: true, attributes: nil)
         }
         let releaseLibPath = releaseDirPath + [library.rawValue]
+        // clean old files
         try? FileManager.default.removeItem(at: releaseLibPath)
+        try Utility.removeFiles(extensions: [".zip", ".checksum.txt"], currentDirectoryURL: releaseDirPath)
 
         // copy static libraries
         for platform in BaseBuild.platforms {
@@ -552,7 +555,6 @@ class BaseBuild {
                 frameworks.append(libName)
             }
         }
-        try Utility.removeFiles(extensions: [".zip", ".checksum.txt"], currentDirectoryURL: releaseDirPath)
         for framework in frameworks {
             let XCFrameworkFile =  framework + ".xcframework"
             let zipFile = releaseDirPath + [framework + ".xcframework.zip"]
