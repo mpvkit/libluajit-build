@@ -8,16 +8,10 @@ let package = Package(
         .library(
             name: "libluajit",
             type: .static,
-            targets: ["luajit"]
+            targets: ["Libluajit"]
         ),
     ],
     targets: [
-        .target(
-            name: "luajit",
-            dependencies: [
-                "Libluajit"
-            ]
-        ),
         .binaryTarget(
             name: "Libluajit",
             url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0/Libluajit.xcframework.zip",
