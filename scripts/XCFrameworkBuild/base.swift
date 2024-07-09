@@ -269,7 +269,8 @@ class BaseBuild {
     }
 
     func createXCFramework() throws {
-        try Utility.removeFiles(extensions: [".xcframework"], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
+        // clean all old xcframework
+        try? Utility.removeFiles(extensions: [".xcframework"], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
 
         var frameworks: [String] = []
         let libNames = try self.frameworks()
