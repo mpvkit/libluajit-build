@@ -521,15 +521,15 @@ class BaseBuild {
         try FileManager.default.copyItem(at: includePath, to: destIncludePath)
 
 
-        // copy pkg-config files
-        let iosLibPath = thinDir(platform: firstPlatform, arch: firstArch) + ["lib"]
-        let pkgconfigPath = iosLibPath + ["pkgconfig"]
+        // copy pkg-config file example
+        let firstPlatformLibPath = thinDir(platform: firstPlatform, arch: firstArch) + ["lib"]
+        let pkgconfigPath = firstPlatformLibPath + ["pkgconfig"]
         let destPkgConfigPath = releaseDirPath + [library.rawValue, "pkgconfig-example"]
         try FileManager.default.copyItem(at: pkgconfigPath, to: destPkgConfigPath)
         let pkgconfigFiles = Utility.listAllFiles(in: destPkgConfigPath)
         for file in pkgconfigFiles {
             if let data = FileManager.default.contents(atPath: file.path), var str = String(data: data, encoding: .utf8) {
-                str = str.replacingOccurrences(of: URL.currentDirectory.path, with: "/path/to/dist")
+                str = str.replacingOccurrences(of: thinDir(platform: firstPlatform, arch: firstArch).path, with: "/path/to/platform/thin")
                 try! str.write(toFile: file.path, atomically: true, encoding: .utf8)
             }
         }
