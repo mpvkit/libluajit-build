@@ -529,7 +529,8 @@ class BaseBuild {
         let pkgconfigFiles = Utility.listAllFiles(in: destPkgConfigPath)
         for file in pkgconfigFiles {
             if let data = FileManager.default.contents(atPath: file.path), var str = String(data: data, encoding: .utf8) {
-                str = str.replacingOccurrences(of: thinDir(platform: firstPlatform, arch: firstArch).path, with: "/path/to/platform/thin")
+                str = str.replacingOccurrences(of: URL.currentDirectory.path, with: "/path/to/workdir")
+                str = str.replacingOccurrences(of: "/\(firstPlatform.rawValue)/thin/\(firstArch.rawValue)", with: "/path/to/thin/platform")
                 try! str.write(toFile: file.path, atomically: true, encoding: .utf8)
             }
         }
@@ -621,7 +622,8 @@ class ZipBaseBuild : BaseBuild {
                 // update pkgconfig prefix
                 Utility.listAllFiles(in: destPkgConfigPath).forEach { file in
                     if let data = FileManager.default.contents(atPath: file.path), var str = String(data: data, encoding: .utf8) {
-                        str = str.replacingOccurrences(of: "/path/to/platform/thin" , with: destThinPath.path)
+                        str = str.replacingOccurrences(of: "/path/to/workdir", with: URL.currentDirectory.path)
+                        str = str.replacingOccurrences(of: "/path/to/thin/platform", with:  "/\(platform.rawValue)/thin/\(arch.rawValue)")
                         try! str.write(toFile: file.path, atomically: true, encoding: .utf8)
                     }
                 }
