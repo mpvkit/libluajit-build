@@ -110,6 +110,11 @@ class BaseBuild {
     static let defaultPath = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     static var platforms = PlatformType.allCases
     static var options = ArgumentOptions()
+    static let splitPlatformGroups = [
+        PlatformType.macos.rawValue: [PlatformType.macos, PlatformType.maccatalyst],
+        PlatformType.ios.rawValue: [PlatformType.ios, PlatformType.isimulator],
+        PlatformType.tvos.rawValue: [PlatformType.tvos, PlatformType.tvsimulator]
+    ]
     let library: Library
     let directoryURL: URL
     init(library: Library) {
@@ -352,26 +357,16 @@ class BaseBuild {
 
             // Generate xcframework for different platforms
             if BaseBuild.options.enableSplitPlatform {
-                if let iosFrameworkPath = frameworkGenerated[.ios] {
-                    var frameworkPaths: [String] = [iosFrameworkPath]
-                    frameworkGenerated.removeValue(forKey: .ios)
-                    if let isimulatorFrameworkPath = frameworkGenerated[.isimulator] {
-                        frameworkPaths.append(isimulatorFrameworkPath)
-                        frameworkGenerated.removeValue(forKey: .isimulator)
+                for (group, platforms) in BaseBuild.splitPlatformGroups {
+                    var frameworkPaths: [String] = []
+                    for platform in platforms {
+                        if let frameworkPath = frameworkGenerated[platform] {
+                            frameworkPaths.append(frameworkPath)
+                        }
                     }
-                    try buildXCFramework(name: "\(framework)-ios", paths: frameworkPaths)
-                }
-                if let tvosFrameworkPath = frameworkGenerated[.tvos] {
-                    var frameworkPaths: [String] = [tvosFrameworkPath]
-                    frameworkGenerated.removeValue(forKey: .tvos)
-                    if let tvsimulatorFrameworkPath = frameworkGenerated[.tvsimulator] {
-                        frameworkPaths.append(tvsimulatorFrameworkPath)
-                        frameworkGenerated.removeValue(forKey: .tvsimulator)
+                    if !frameworkPaths.isEmpty {
+                        try buildXCFramework(name: "\(framework)-\(group)", paths: frameworkPaths)
                     }
-                    try buildXCFramework(name: "\(framework)-tvos", paths: frameworkPaths)
-                }
-                for (platform, frameworkPath) in frameworkGenerated {
-                    try buildXCFramework(name: "\(framework)-\(platform.rawValue)", paths: [frameworkPath])
                 }
             }
         }
@@ -638,10 +633,10 @@ class BaseBuild {
             Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
 
             if BaseBuild.options.enableSplitPlatform {
-                for platform in BaseBuild.platforms {
-                    let XCFrameworkName =  "\(framework)-\(platform.rawValue)"
+                for group in BaseBuild.splitPlatformGroups.keys {
+                    let XCFrameworkName =  "\(framework)-\(group)"
                     let XCFrameworkFile =  XCFrameworkName + ".xcframework"
-                    let XCFrameworkPath = URL.currentDirectory + ["../Sources", "\(framework)-\(platform.rawValue).xcframework"]
+                    let XCFrameworkPath = URL.currentDirectory + ["../Sources", "\(framework)-\(group).xcframework"]
                     if FileManager.default.fileExists(atPath: XCFrameworkPath.path) {
                         let zipFile = releaseDirPath + [XCFrameworkName + ".xcframework.zip"]
                         let checksumFile = releaseDirPath + [XCFrameworkName + ".xcframework.checksum.txt"]
