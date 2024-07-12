@@ -2,10 +2,6 @@ import Foundation
 
 enum Build {
     static func performCommand(_ options: ArgumentOptions) throws {
-        if options.showHelp {
-            print(options.help())
-            return
-        }
         if Utility.shell("which brew") == nil {
             print("""
             You need to run the script first
@@ -38,7 +34,6 @@ class ArgumentOptions {
     var enableDebug: Bool = false
     var enableSplitPlatform: Bool = false
     var enableGPL: Bool = false
-    var showHelp: Bool = false
     var platforms : [PlatformType] = []
 
     init() {
@@ -46,39 +41,22 @@ class ArgumentOptions {
     }
 
     init(arguments: [String]) {
-        self.arguments = Array(arguments.dropFirst())
+        self.arguments = arguments
     }
 
     func contains(_ argument: String) -> Bool {  
         return self.arguments.firstIndex(of: argument) != nil
     }
 
-
-    func help() -> String {
-        """
-        Usage: make build [OPTION]...
-        Default Build: make build enable-gpl
-
-        Options:
-            help                    display this help and exit
-            enable-debug            build ffmpeg with debug information
-            enable-gpl              build ffmpeg with GPL license
-            enable-split-platform   split XCFramework by platform
-            platforms=xros,ios      Only build specified platforms, all available platforms: macos,ios,isimulator,tvos,tvsimulator,maccatalyst
-        """
-    }
-
     static func parse(_ arguments: [String]) throws -> ArgumentOptions {
-        let options = ArgumentOptions(arguments: arguments)
+        let options = ArgumentOptions(arguments: Array(arguments.dropFirst()))
         for argument in arguments {
             switch argument {
-            case "-h", "--help":
-                options.showHelp = true
-            case "enable-debug" :
+            case "enable-debug":
                 options.enableDebug = true
-            case "enable-gpl" :
+            case "enable-gpl":
                 options.enableGPL = true
-            case "enable-split-platform" :
+            case "enable-split-platform":
                 options.enableSplitPlatform = true
             default:
                 if argument.hasPrefix("platforms=") {
