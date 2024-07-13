@@ -19,6 +19,7 @@ jobs:
 
     - name: test
       run: |
+        xcodebuild -showsdks
         /usr/bin/xcrun --sdk xros --find --show-sdk-path
         /usr/bin/xcrun --sdk xros --find ar
         /usr/bin/xcrun --sdk xros --find strip
