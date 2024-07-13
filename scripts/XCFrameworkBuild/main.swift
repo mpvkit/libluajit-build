@@ -79,11 +79,12 @@ private class BuildLuaJIT: BaseBuild {
 
         if platform == .macos {
             environ["MACOSX_DEPLOYMENT_TARGET"] = "10.15"
+            let hostArch = arch.executableArchitecture ?? "x86_64"
             arguments += [
                 "TARGET_CFLAGS=--target=\(arch.rawValue)-apple-darwin",
                 "TARGET_LDFLAGS=--target=\(arch.rawValue)-apple-darwin",
-                "HOST_CFLAGS=--target=x86_64-apple-darwin",
-                "HOST_LDFLAGS=--target=x86_64-apple-darwin",
+                "HOST_CFLAGS=--target=\(hostArch)-apple-darwin",
+                "HOST_LDFLAGS=--target=\(hostArch)-apple-darwin",
             ]
         } else {
             let xcodePath = Utility.shell("xcode-select -p", isOutput: true) ?? "/Applications/Xcode.app/Contents/Developer"
