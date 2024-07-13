@@ -9,10 +9,13 @@ let package = Package(
         .library(name: "Libluajit", targets: ["Libluajit"]),
     ],
     targets: [
+        //DEPENDENCY_TARGETS_BEGIN//
+
         .binaryTarget(
             name: "Libluajit",
             url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0/Libluajit.xcframework.zip",
-            checksum: "a63165ff58b9f46cdabe7b6d545bd507ff2ab0e696f6929366b7aa1be08e7df7"
-        )
+            checksum: "72b71ef05124e0aa261b95d78b074965d49ed2915ff5f3bafc54d8c1b2c93dba"
+        ),
+        //DEPENDENCY_TARGETS_END//
     ]
 )
