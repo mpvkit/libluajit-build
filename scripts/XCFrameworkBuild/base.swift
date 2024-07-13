@@ -19,13 +19,13 @@ enum Build {
         if !FileManager.default.fileExists(atPath: path.path) {
             try? FileManager.default.createDirectory(at: path, withIntermediateDirectories: false, attributes: nil)
         }
+        try? FileManager.default.removeItem(atPath: (URL.currentDirectory + "dist/release/Package.swift").path)
         FileManager.default.changeCurrentDirectoryPath(path.path)
         BaseBuild.options = options
         if !options.platforms.isEmpty {
             BaseBuild.platforms = options.platforms
         }
     }
-
 }
 
 
@@ -33,8 +33,9 @@ class ArgumentOptions {
     private let arguments: [String]
     var enableDebug: Bool = false
     var enableSplitPlatform: Bool = false
-    var enableGPL: Bool = false
+    var disableGPL: Bool = false
     var platforms : [PlatformType] = []
+    var releaseVersion: String = "0.0.0"
 
     init() {
         self.arguments = []
@@ -54,11 +55,15 @@ class ArgumentOptions {
             switch argument {
             case "enable-debug":
                 options.enableDebug = true
-            case "enable-gpl":
-                options.enableGPL = true
+            case "disable-gpl":
+                options.disableGPL = true
             case "enable-split-platform":
                 options.enableSplitPlatform = true
             default:
+                if argument.hasPrefix("version=") {
+                    let version = String(argument.suffix(argument.count - "version=".count))
+                    options.releaseVersion = version
+                }
                 if argument.hasPrefix("platform=") {
                     let values = String(argument.suffix(argument.count - "platform=".count))
                     for val in values.split(separator: ",") {
@@ -140,6 +145,7 @@ class BaseBuild {
         }
         try createXCFramework()
         try packageRelease()
+        try generatePackageManagerFile()
     }
 
     func architectures(_ platform: PlatformType) -> [ArchType] {
@@ -237,20 +243,10 @@ class BaseBuild {
         }
     }
 
-    private func pkgConfigPath(platform: PlatformType, arch: ArchType) -> String {
-        var pkgConfigPath = ""
-        for lib in Library.allCases {
-            let path = URL.currentDirectory + [lib.rawValue, platform.rawValue, "thin", arch.rawValue]
-            if FileManager.default.fileExists(atPath: path.path) {
-                pkgConfigPath += "\(path.path)/lib/pkgconfig:"
-            }
-        }
-        return pkgConfigPath
-    }
-
     func environment(platform: PlatformType, arch: ArchType) -> [String: String] {
         let cFlags = cFlags(platform: platform, arch: arch).joined(separator: " ")
         let ldFlags = ldFlags(platform: platform, arch: arch).joined(separator: " ")
+        let pkgConfigPath = platform.pkgConfigPath(arch: arch)
         let pkgConfigPathDefault = Utility.shell("pkg-config --variable pc_path pkg-config", isOutput: true)!
         return [
             "LC_CTYPE": "C",
@@ -264,7 +260,7 @@ class BaseBuild {
             // 这个要加，不然cmake在编译maccatalyst 会有问题
             "CXXFLAGS": cFlags,
             "LDFLAGS": ldFlags,
-            "PKG_CONFIG_LIBDIR": platform.pkgConfigPath(arch: arch) + pkgConfigPathDefault,
+            "PKG_CONFIG_LIBDIR": pkgConfigPath + pkgConfigPathDefault,
             "PATH": BaseBuild.defaultPath,
         ]
     }
@@ -632,6 +628,71 @@ class BaseBuild {
         }
     }
 
+    func generatePackageManagerFile() throws {
+        let releaseDirPath = URL.currentDirectory + ["release"]
+        let template = URL.currentDirectory + ["../docs/Package.template.swift"]
+        let packageFile = releaseDirPath + "Package.swift"
+
+        if !FileManager.default.fileExists(atPath: packageFile.path) {
+            try! FileManager.default.createDirectory(at: releaseDirPath, withIntermediateDirectories: true, attributes: nil)
+            try! FileManager.default.copyItem(at: template, to: packageFile)
+        }
+
+        var dependencyTargetContent = ""
+        if self is ZipBaseBuild {
+            for target in library.targets {
+                let tmpChecksum = FileManager.default.temporaryDirectory + "\(library.rawValue)_checksum.txt"
+                if FileManager.default.fileExists(atPath: tmpChecksum.path) {
+                    try? FileManager.default.removeItem(at: tmpChecksum)
+                }
+                try! Utility.launch(path: "wget", arguments: ["-q", "-O", tmpChecksum.path, target.checksum], currentDirectoryURL: FileManager.default.temporaryDirectory)
+                let checksum = try String(contentsOf: tmpChecksum, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+                dependencyTargetContent += """
+                
+                        .binaryTarget(
+                            name: "\(target.name)",
+                            url: "\(target.url)",
+                            checksum: "\(checksum)"
+                        ),
+                """
+                try? FileManager.default.removeItem(at: tmpChecksum)
+            }
+        } else {
+            for target in library.targets {
+                let checksumFile = releaseDirPath + [target.name + ".xcframework.checksum.txt"]
+                if !FileManager.default.fileExists(atPath: checksumFile.path) {
+                    continue
+                }
+                let checksum = try String(contentsOf: checksumFile, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+                dependencyTargetContent += """
+
+                        .binaryTarget(
+                            name: "\(target.name)",
+                            url: "\(target.url)",
+                            checksum: "\(checksum)"
+                        ),
+                """
+            }
+        }
+
+        if dependencyTargetContent.isEmpty {
+            return
+        }
+
+        if let data = FileManager.default.contents(atPath: packageFile.path), var str = String(data: data, encoding: .utf8) {
+            let placeholderChars = "//DEPENDENCY_TARGETS_END//"
+            str = str.replacingOccurrences(of: 
+            """
+                    \(placeholderChars)
+            """, with: 
+            """
+            \(dependencyTargetContent)
+                    \(placeholderChars)
+            """)
+            try! str.write(toFile: packageFile.path, atomically: true, encoding: .utf8)
+        }
+    }
+
     func getFirstSuccessPlatform() -> PlatformType {
         for platform in BaseBuild.platforms {
             let firstArch = architectures(platform).first!
@@ -682,6 +743,28 @@ class ZipBaseBuild : BaseBuild {
                 }
             }
         }
+
+        try generatePackageManagerFile()
+    }
+}
+
+class PackageTarget {
+    let name: String
+    let url : String
+    let checksum: String
+
+    init(name: String, url : String, checksum: String) {
+        self.name = name
+        self.url = url
+        self.checksum = checksum
+    }
+
+    static func target(
+        name: String,
+        url : String,
+        checksum: String
+    ) -> PackageTarget {
+        return PackageTarget(name: name, url: url, checksum: checksum)
     }
 }
 
@@ -754,7 +837,7 @@ enum PlatformType: String, CaseIterable {
         }
     }
 
-    fileprivate func deploymentTarget(_ arch: ArchType) -> String {
+    func deploymentTarget(_ arch: ArchType) -> String {
         switch self {
         case .ios, .tvos, .macos:
             return "\(arch.targetCpu)-apple-\(rawValue)\(minVersion)"

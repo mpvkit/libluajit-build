@@ -9,10 +9,7 @@ let package = Package(
         .library(name: "Libluajit", targets: ["Libluajit"]),
     ],
     targets: [
-        .binaryTarget(
-            name: "Libluajit",
-            url: "\(Libluajit_url)",
-            checksum: "\(Libluajit_checksum)"
-        )
+        //DEPENDENCY_TARGETS_BEGIN//
+        //DEPENDENCY_TARGETS_END//
     ]
 )

@@ -26,6 +26,20 @@ enum Library: String, CaseIterable {
             return "https://github.com/LuaJIT/LuaJIT.git"
         }
     }
+
+    // for generate Package.swift
+    var targets : [PackageTarget] {
+        switch self {
+        case .libluajit:
+            return  [
+                .target(
+                    name: "Libluajit",
+                    url: "https://github.com/mpvkit/libluajit-build/releases/download/\(BaseBuild.options.releaseVersion)/Libluajit.xcframework.zip",
+                    checksum: "https://github.com/mpvkit/libluajit-build/releases/download/\(BaseBuild.options.releaseVersion)/Libluajit.xcframework.checksum.txt"
+                ),
+            ]
+        }
+    }
 }
 
 private class BuildLuaJIT: BaseBuild {

@@ -24,17 +24,12 @@ jobs:
 
     - name: Build
       run: |
-        make build
+        make build version=${{ github.event.inputs.version }}
     
     - name: Update Package.swift
       run: |
-        rm -f ./Package.swift
-        cp -f ./docs/Package.template.swift ./Package.swift
-
-        Libluajit_url="https://github.com/mpvkit/libluajit-build/releases/download/${{ github.event.inputs.version }}/Libluajit.xcframework.zip"
-        Libluajit_checksum=$(cat ./dist/release/Libluajit.xcframework.checksum.txt)
-        sed -i '' "s#\\\(Libluajit_url)#${Libluajit_url}#g" ./Package.swift
-        sed -i '' "s#\\\(Libluajit_checksum)#${Libluajit_checksum}#g" ./Package.swift
+        rm -rf ./Package.swift
+        cp -f ./dist/release/Package.swift ./Package.swift
 
     - name: Push Package.swift
       uses: EndBug/add-and-commit@v9
