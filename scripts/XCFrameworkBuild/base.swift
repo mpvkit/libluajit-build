@@ -96,7 +96,8 @@ class BaseBuild {
     static let splitPlatformGroups = [
         PlatformType.macos.rawValue: [PlatformType.macos, PlatformType.maccatalyst],
         PlatformType.ios.rawValue: [PlatformType.ios, PlatformType.isimulator],
-        PlatformType.tvos.rawValue: [PlatformType.tvos, PlatformType.tvsimulator]
+        PlatformType.tvos.rawValue: [PlatformType.tvos, PlatformType.tvsimulator],
+        PlatformType.xros.rawValue: [PlatformType.xros, PlatformType.xrsimulator]
     ]
     let library: Library
     let directoryURL: URL
@@ -770,7 +771,7 @@ class PackageTarget {
 
 
 enum PlatformType: String, CaseIterable {
-    case maccatalyst, macos, isimulator, tvsimulator, tvos, ios
+    case maccatalyst, macos, isimulator, tvsimulator, tvos, ios, xros, xrsimulator
     var minVersion: String {
         switch self {
         case .ios, .isimulator:
@@ -782,6 +783,8 @@ enum PlatformType: String, CaseIterable {
         case .maccatalyst:
             // return "14.0"
             return ""
+        case .xros, .xrsimulator:
+            return "1.0"
         }
     }
 
@@ -795,6 +798,10 @@ enum PlatformType: String, CaseIterable {
             return "iossim"
         case .maccatalyst:
             return "maccat"
+        case .xros:
+            return "visionos"
+        case .xrsimulator:
+            return "visionossim"
         }
     }
 
@@ -813,18 +820,24 @@ enum PlatformType: String, CaseIterable {
             return "tvos-arm64_arm64e"
         case .tvsimulator:
             return "tvos-arm64_x86_64-simulator"
+        case .xros:
+            return "xros-arm64"
+        case .xrsimulator:
+            return "xros-arm64_x86_64-simulator"
         }
     }
 
 
     var architectures: [ArchType] {
         switch self {
-        case .ios:
+        case .ios, .xros:
             return [.arm64]
         case .tvos:
             return [.arm64, .arm64e]
+        case .xrsimulator:
+            return [.arm64]
         case .isimulator, .tvsimulator:
-            return [.arm64, .x86_64]
+            return [.arm64, .x86_64]  
         case .macos:
             // macos 不能用arm64，不然打包release包会报错，不能通过
             #if arch(x86_64)
@@ -839,7 +852,7 @@ enum PlatformType: String, CaseIterable {
 
     func deploymentTarget(_ arch: ArchType) -> String {
         switch self {
-        case .ios, .tvos, .macos:
+        case .ios, .tvos, .macos, .xros:
             return "\(arch.targetCpu)-apple-\(rawValue)\(minVersion)"
         case .maccatalyst:
             return "\(arch.targetCpu)-apple-ios-macabi"
@@ -847,10 +860,8 @@ enum PlatformType: String, CaseIterable {
             return PlatformType.ios.deploymentTarget(arch) + "-simulator"
         case .tvsimulator:
             return PlatformType.tvos.deploymentTarget(arch) + "-simulator"
-        // case .watchsimulator:
-        //     return PlatformType.watchos.deploymentTarget(arch) + "-simulator"
-        // case .xrsimulator:
-        //     return PlatformType.xros.deploymentTarget(arch) + "-simulator"
+        case .xrsimulator:
+            return PlatformType.xros.deploymentTarget(arch) + "-simulator"
         }
     }
 
@@ -865,7 +876,7 @@ enum PlatformType: String, CaseIterable {
             return "-mios-simulator-version-min=\(minVersion)"
         case .tvsimulator:
             return "-mtvos-simulator-version-min=\(minVersion)"
-        case .maccatalyst:
+        case .maccatalyst, .xros, .xrsimulator:
             return ""
             // return "-miphoneos-version-min=\(minVersion)"
         }
@@ -885,6 +896,10 @@ enum PlatformType: String, CaseIterable {
             return "MacOSX"
         case .maccatalyst:
             return "MacOSX"
+        case .xros:
+            return "XROS"
+        case .xrsimulator:
+            return "XRSimulator"
         }
     }
 
@@ -898,10 +913,8 @@ enum PlatformType: String, CaseIterable {
             return "ios-simulator"
         case .tvsimulator:
             return "tvos-simulator"
-        // case .xrsimulator:
-        //     return "xros-simulator"
-        // case .watchsimulator:
-        //     return "watchos-simulator"
+        case .xrsimulator:
+            return "xros-simulator"
         default:
             return rawValue
         }
@@ -913,6 +926,8 @@ enum PlatformType: String, CaseIterable {
             return "\(arch == .x86_64 ? "x86_64" : "arm64")-ios-darwin"
         case .tvos, .tvsimulator:
             return "\(arch == .x86_64 ? "x86_64" : "arm64")-tvos-darwin"
+        case .xros, .xrsimulator:
+            return "\(arch == .x86_64 ? "x86_64" : "arm64")-xros-darwin"
         case .macos:
             return "\(arch == .x86_64 ? "x86_64" : "arm64")-apple-darwin"
         }
