@@ -22,12 +22,14 @@ jobs:
         brew install automake
         brew install libtool
 
-    - run: /usr/bin/xcrun --sdk xros --find --show-sdk-path
-    - run: /usr/bin/xcrun --sdk xros --find ar
-    - run: /usr/bin/xcrun --sdk xros --find strip
-    - run: /usr/bin/xcrun --sdk xrsimulator --find --show-sdk-path
-    - run: /usr/bin/xcrun --sdk xrsimulator --find ar
-    - run: /usr/bin/xcrun --sdk xrsimulator --find strip
+    - name: test
+      run: |
+        /usr/bin/xcrun --sdk xros --find --show-sdk-path
+        /usr/bin/xcrun --sdk xros --find ar
+        /usr/bin/xcrun --sdk xros --find strip
+        /usr/bin/xcrun --sdk xrsimulator --find --show-sdk-path
+        /usr/bin/xcrun --sdk xrsimulator --find ar
+        /usr/bin/xcrun --sdk xrsimulator --find strip
 
     - name: Build
       run: |
