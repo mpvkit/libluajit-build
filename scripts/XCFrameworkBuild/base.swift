@@ -771,7 +771,7 @@ class PackageTarget {
 
 
 enum PlatformType: String, CaseIterable {
-    case maccatalyst, macos, isimulator, tvsimulator, tvos, ios, xros, xrsimulator
+    case xros, xrsimulator, maccatalyst, macos, isimulator, tvsimulator, tvos, ios
     var minVersion: String {
         switch self {
         case .ios, .isimulator:
@@ -989,13 +989,12 @@ enum ArchType: String, CaseIterable {
         return false
     }
 
-    var executableArchitecture: String? {
+    var hostArchitecture: String {
         #if arch(arm64)
         return "arm64"
-        #elseif arch(x86_64)
+        #else
         return "x86_64"
         #endif
-        return nil
     }
 
     var cpuFamily: String {
