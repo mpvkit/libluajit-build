@@ -82,8 +82,8 @@ private class BuildLuaJIT: BaseBuild {
             arguments += [
                 "TARGET_CFLAGS=--target=\(arch.rawValue)-apple-darwin",
                 "TARGET_LDFLAGS=--target=\(arch.rawValue)-apple-darwin",
-                "HOST_CFLAGS=--target=x86_64-apple-darwin",
-                "HOST_LDFLAGS=--target=x86_64-apple-darwin",
+                "HOST_CFLAGS=--target=\(arch.hostArchitecture)-apple-darwin",
+                "HOST_LDFLAGS=--target=\(arch.hostArchitecture)-apple-darwin",
             ]
         } else {
             let xcodePath = Utility.shell("xcode-select -p", isOutput: true) ?? "/Applications/Xcode.app/Contents/Developer"

@@ -22,6 +22,11 @@ jobs:
         brew install automake
         brew install libtool
 
+    - name: Setup Xcode
+      run: |
+        sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+        xcodebuild -showsdks
+
     - name: Build
       run: |
         make build version=${{ github.event.inputs.version }}
@@ -48,5 +53,5 @@ jobs:
         files: |
           ./dist/release/*.txt
           ./dist/release/*.zip
-        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+        prerelease: ${{ contains(github.event.inputs.version, 'alpha') || contains(github.event.inputs.version, 'beta') }}
         fail_on_unmatched_files: true
