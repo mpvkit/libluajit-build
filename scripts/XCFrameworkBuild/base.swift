@@ -990,15 +990,11 @@ enum ArchType: String, CaseIterable {
     }
 
     var executableArchitecture: String? {
-        guard let arch = Bundle.main.executableArchitectures?.first?.intValue else {
-            return nil
-        }
-        // NSBundleExecutableArchitectureARM64
-        if arch == 0x0100_000C {
-            return "arm64"
-        } else if arch == NSBundleExecutableArchitectureX86_64 {
-            return "x86_64"
-        }
+        #if arch(arm64)
+        return "arm64"
+        #elseif arch(x86_64)
+        return "x86_64"
+        #endif
         return nil
     }
 
