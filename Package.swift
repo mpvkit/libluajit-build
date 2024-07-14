@@ -6,16 +6,23 @@ let package = Package(
     name: "libluajit",
     platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13)],
     products: [
-        .library(name: "Libluajit", targets: ["Libluajit"]),
+        .library(name: "Libluajit", targets: ["_Libluajit"]),
     ],
     targets: [
-        //DEPENDENCY_TARGETS_BEGIN//
+        // Need a dummy target to embedded correctly.
+        // https://github.com/apple/swift-package-manager/issues/6069
+        .target(
+            name: "_Libluajit",
+            dependencies: ["Libluajit"],
+            path: "Sources/_Dummy"
+        ),
+        //AUTO_GENERATE_TARGETS_BEGIN//
 
         .binaryTarget(
             name: "Libluajit",
             url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0/Libluajit.xcframework.zip",
-            checksum: "befb99ca417903bb75a58ce5288cd027221d8c22f09344824819164a62a59617"
+            checksum: "a7c0962d471cb1cd22c0e197fb260523e5860f452ae033f2610961d1fe6f9cc3"
         ),
-        //DEPENDENCY_TARGETS_END//
+        //AUTO_GENERATE_TARGETS_END//
     ]
 )
