@@ -14,7 +14,7 @@ help:
 	@echo "  help                  Display this help message"
 
 build:
-	swift run --build-path ./.build --package-path scripts build $(filter-out $@,$(MAKECMDGOALS)) $(MAKEFLAGS)
+	swift run --build-path ./.build --package-path Sources/BuildScripts build $(filter-out $@,$(MAKECMDGOALS)) $(MAKEFLAGS)
 
 clean:
 	@rm -rf ./.build

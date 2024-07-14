@@ -22,7 +22,7 @@ jobs:
         brew install automake
         brew install libtool
 
-    - name: Setup Xcode
+    - name: Setup Xcode to support visionOS
       run: |
         sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
         xcodebuild -showsdks

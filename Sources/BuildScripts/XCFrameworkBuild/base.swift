@@ -33,7 +33,7 @@ class ArgumentOptions {
     private let arguments: [String]
     var enableDebug: Bool = false
     var enableSplitPlatform: Bool = false
-    var disableGPL: Bool = false
+    var enableGPL: Bool = false
     var platforms : [PlatformType] = []
     var releaseVersion: String = "0.0.0"
 
@@ -55,8 +55,8 @@ class ArgumentOptions {
             switch argument {
             case "enable-debug":
                 options.enableDebug = true
-            case "disable-gpl":
-                options.disableGPL = true
+            case "enable-gpl":
+                options.enableGPL = true
             case "enable-split-platform":
                 options.enableSplitPlatform = true
             default:
@@ -310,7 +310,8 @@ class BaseBuild {
 
     func createXCFramework() throws {
         // clean all old xcframework
-        try? Utility.removeFiles(extensions: [".xcframework"], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
+        let xcframeworkReleasePath = URL.currentDirectory + ["xcframework"]
+        try? Utility.removeFiles(extensions: [".xcframework"], currentDirectoryURL: xcframeworkReleasePath)
 
         var frameworks: [String] = []
         let libNames = try self.frameworks()
@@ -354,7 +355,7 @@ class BaseBuild {
             arguments.append(frameworkPath)
         }
         arguments.append("-output")
-        let XCFrameworkFile = URL.currentDirectory + ["../Sources", name + ".xcframework"]
+        let XCFrameworkFile = URL.currentDirectory + ["xcframework", name + ".xcframework"]
         arguments.append(XCFrameworkFile.path)
         if FileManager.default.fileExists(atPath: XCFrameworkFile.path) {
             try? FileManager.default.removeItem(at: XCFrameworkFile)
@@ -576,6 +577,7 @@ class BaseBuild {
                 frameworks.append(libName)
             }
         }
+        let xcframeworkReleasePath = URL.currentDirectory + ["xcframework"]
         for framework in frameworks {
             // clean old files
             try Utility.launch(path: "/bin/rm", arguments: ["-rf", "\(framework)*.xcframework.zip"], currentDirectoryURL: releaseDirPath)
@@ -584,18 +586,18 @@ class BaseBuild {
             let XCFrameworkFile =  framework + ".xcframework"
             let zipFile = releaseDirPath + [framework + ".xcframework.zip"]
             let checksumFile = releaseDirPath + [framework + ".xcframework.checksum.txt"]
-            try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
+            try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: xcframeworkReleasePath)
             Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
 
             if BaseBuild.options.enableSplitPlatform {
                 for group in BaseBuild.splitPlatformGroups.keys {
                     let XCFrameworkName =  "\(framework)-\(group)"
                     let XCFrameworkFile =  XCFrameworkName + ".xcframework"
-                    let XCFrameworkPath = URL.currentDirectory + ["../Sources", "\(framework)-\(group).xcframework"]
+                    let XCFrameworkPath = xcframeworkReleasePath + ["\(framework)-\(group).xcframework"]
                     if FileManager.default.fileExists(atPath: XCFrameworkPath.path) {
                         let zipFile = releaseDirPath + [XCFrameworkName + ".xcframework.zip"]
                         let checksumFile = releaseDirPath + [XCFrameworkName + ".xcframework.checksum.txt"]
-                        try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: URL.currentDirectory + ["../Sources"])
+                        try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: xcframeworkReleasePath)
                         Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
                     }
                 }
@@ -681,7 +683,7 @@ class BaseBuild {
         }
 
         if let data = FileManager.default.contents(atPath: packageFile.path), var str = String(data: data, encoding: .utf8) {
-            let placeholderChars = "//DEPENDENCY_TARGETS_END//"
+            let placeholderChars = "//AUTO_GENERATE_TARGETS_END//"
             str = str.replacingOccurrences(of: 
             """
                     \(placeholderChars)
