@@ -45,7 +45,12 @@ enum Library: String, CaseIterable {
 private class BuildLuaJIT: BaseBuild {
     init() {
         super.init(library: .libluajit)
+    }
 
+    override func beforeBuild() throws {
+        try super.beforeBuild()
+
+        
         // remove ABI version, xcframework with ABIVER can't build in swift 5.7.*
         let makefile = directoryURL + "Makefile"
         if let data = FileManager.default.contents(atPath: makefile.path), var str = String(data: data, encoding: .utf8) {
@@ -62,7 +67,6 @@ private class BuildLuaJIT: BaseBuild {
             str = str.replacingOccurrences(of: "-${abiver}", with: "")
             try! str.write(toFile: pcfile.path, atomically: true, encoding: .utf8)
         }
-
     }
 
     override func build(platform: PlatformType, arch: ArchType) throws {

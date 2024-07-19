@@ -16,7 +16,7 @@ https://github.com/mpvkit/libluajit-build.git
 
 ```bash
 make build
-# or specified platforms 
+# or build specified platforms 
 make build platform=ios,macos
 # or see help
 make help
