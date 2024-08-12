@@ -73,11 +73,12 @@ class ArgumentOptions {
                             options.platforms += [PlatformType.ios, PlatformType.isimulator]
                         case "tvos":
                             options.platforms += [PlatformType.tvos, PlatformType.tvsimulator]
+                        case "xros":
+                            options.platforms += [PlatformType.xros, PlatformType.xrsimulator]
                         default:
-                            if let other = PlatformType(rawValue: platformStr), !options.platforms.contains(other) {
+                            guard let other = PlatformType(rawValue: platformStr) else { throw NSError(domain: "unknown platform: \(val)", code: 1) } 
+                            if !options.platforms.contains(other) {
                                 options.platforms += [other]
-                            } else {
-                                throw NSError(domain: "unknown platform: \(val)", code: 1)
                             }
                         }
                     }
@@ -434,7 +435,7 @@ class BaseBuild {
     }
 
     private func createPlist(path: String, name: String, minVersion: String, platform: String) {
-        let identifier = "com.kintan.ksplayer." + name
+        let identifier = "com.mpvkit." + normalizeBundleIdentifier(name)
         let content = """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -470,6 +471,11 @@ class BaseBuild {
         </plist>
         """
         FileManager.default.createFile(atPath: path, contents: content.data(using: .utf8), attributes: nil)
+    }
+
+    // CFBundleIdentifier must contain only alphanumerics, dots, hyphens 
+    private func normalizeBundleIdentifier(_ identifier: String) -> String {
+        return identifier.replacingOccurrences(of: "_", with: "")
     }
 
 
