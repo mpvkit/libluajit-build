@@ -47,6 +47,14 @@ private class BuildLuaJIT: BaseBuild {
         super.init(library: .libluajit)
     }
 
+    var hostArchitecture: String {
+        #if arch(arm64)
+        return "arm64"
+        #else
+        return "x86_64"
+        #endif
+    }
+
     override func beforeBuild() throws {
         try super.beforeBuild()
 
@@ -86,8 +94,8 @@ private class BuildLuaJIT: BaseBuild {
             arguments += [
                 "TARGET_CFLAGS=--target=\(arch.rawValue)-apple-darwin",
                 "TARGET_LDFLAGS=--target=\(arch.rawValue)-apple-darwin",
-                "HOST_CFLAGS=--target=\(arch.hostArchitecture)-apple-darwin",
-                "HOST_LDFLAGS=--target=\(arch.hostArchitecture)-apple-darwin",
+                "HOST_CFLAGS=--target=\(hostArchitecture)-apple-darwin",
+                "HOST_LDFLAGS=--target=\(hostArchitecture)-apple-darwin",
             ]
         } else {
             let xcodePath = Utility.shell("xcode-select -p", isOutput: true) ?? "/Applications/Xcode.app/Contents/Developer"
