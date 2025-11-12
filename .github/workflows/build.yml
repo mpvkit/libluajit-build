@@ -79,4 +79,7 @@ jobs:
         prerelease: ${{ contains(env.RELEASE_VERSION, '-') }}
         generate_release_notes: true
         fail_on_unmatched_files: true
+        body: |
+          https://github.com/LuaJIT/LuaJIT/releases/tag/${{ env.BUILD_VERSION }}
 
+          ![download](https://img.shields.io/github/downloads/${{ github.repository }}/${{ env.RELEASE_VERSION }}/total?label=Downloads)
