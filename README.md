@@ -2,6 +2,8 @@
 
 build scripts for [luajit](https://github.com/LuaJIT/LuaJIT.git)
 
+> This is a component of the [MPVKit](https://github.com/mpvkit/MPVKit) project.
+
 ## Installation
 
 ### Swift Package Manager
