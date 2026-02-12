@@ -1,17 +1,17 @@
 import Foundation
+import BuildShared
 
 do {
-    let options = try ArgumentOptions.parse(CommandLine.arguments)
-    try Build.performCommand(options)
+    let options = try BuildRunner.performCommand()
 
-    try BuildLuaJIT().buildALL()
+    try BuildLuaJIT(options: options).buildALL()
 } catch {
     print(error.localizedDescription)
     exit(1)
 }
 
 
-enum Library: String, CaseIterable {
+enum Library: String, CaseIterable, BuildLibrary {
     case libluajit
     var version: String {
         switch self {
@@ -27,6 +27,7 @@ enum Library: String, CaseIterable {
         }
     }
 
+
     // for generate Package.swift
     var targets : [PackageTarget] {
         switch self {
@@ -34,17 +35,19 @@ enum Library: String, CaseIterable {
             return  [
                 .target(
                     name: "Libluajit",
-                    url: "https://github.com/mpvkit/libluajit-build/releases/download/\(BaseBuild.options.releaseVersion)/Libluajit.xcframework.zip",
-                    checksum: "https://github.com/mpvkit/libluajit-build/releases/download/\(BaseBuild.options.releaseVersion)/Libluajit.xcframework.checksum.txt"
+                    url: "https://github.com/mpvkit/libluajit-build/releases/download/\(BuildRunner.options!.releaseVersion)/Libluajit.xcframework.zip",
+                    checksum: "https://github.com/mpvkit/libluajit-build/releases/download/\(BuildRunner.options!.releaseVersion)/Libluajit.xcframework.checksum.txt"
                 ),
             ]
         }
     }
 }
 
+
+
 private class BuildLuaJIT: BaseBuild {
-    init() {
-        super.init(library: .libluajit)
+    init(options: ArgumentOptions) {
+        super.init(library: Library.libluajit, options: options)
     }
 
     var hostArchitecture: String {
