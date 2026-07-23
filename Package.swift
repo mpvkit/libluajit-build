@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "libluajit",
-    platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13)],
+    platforms: [.macOS(.v11), .iOS(.v14), .tvOS(.v14)],
     products: [
         .library(name: "Libluajit", targets: ["_Libluajit"]),
     ],
@@ -20,8 +20,8 @@ let package = Package(
 
         .binaryTarget(
             name: "Libluajit",
-            url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0-xcode/Libluajit.xcframework.zip",
-            checksum: "8e76f267ee100ff5f3bbde7641b2240566df722241cdf8e135be7ef3d29e237a"
+            url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0-2607/Libluajit.xcframework.zip",
+            checksum: "26e43ac10446152aae9546dc5496cd6d0c21afcf4d0ec5033cd850c984a829f6"
         ),
         //AUTO_GENERATE_TARGETS_END//
     ]
