@@ -20,8 +20,8 @@ let package = Package(
 
         .binaryTarget(
             name: "Libluajit",
-            url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0-2607/Libluajit.xcframework.zip",
-            checksum: "26e43ac10446152aae9546dc5496cd6d0c21afcf4d0ec5033cd850c984a829f6"
+            url: "https://github.com/mpvkit/libluajit-build/releases/download/2.1.0-fix/Libluajit.xcframework.zip",
+            checksum: "3a171ef1627fb88260893dc452f989bd93dd8510814771ba3aff7753470d3f3e"
         ),
         //AUTO_GENERATE_TARGETS_END//
     ]
