@@ -93,7 +93,7 @@ private class BuildLuaJIT: BaseBuild {
         ]
 
         if platform == .macos {
-            environ["MACOSX_DEPLOYMENT_TARGET"] = "10.15"
+            environ["MACOSX_DEPLOYMENT_TARGET"] = platform.minVersion
             arguments += [
                 "TARGET_CFLAGS=--target=\(arch.rawValue)-apple-darwin",
                 "TARGET_LDFLAGS=--target=\(arch.rawValue)-apple-darwin",
@@ -102,7 +102,7 @@ private class BuildLuaJIT: BaseBuild {
             ]
         } else {
             let xcodePath = Utility.shell("xcode-select -p", isOutput: true) ?? "/Applications/Xcode.app/Contents/Developer"
-            environ["TARGET_FLAGS"] = "-arch \(arch.rawValue) -isysroot \(platform.isysroot)"
+            environ["TARGET_FLAGS"] = "-arch \(arch.rawValue) -isysroot \(platform.isysroot) -target \(platform.deploymentTarget(arch))"
             arguments += [
                 "DEFAULT_CC=clang",
                 "CROSS=\(xcodePath)/Toolchains/XcodeDefault.xctoolchain/usr/bin/",
